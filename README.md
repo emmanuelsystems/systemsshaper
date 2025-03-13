@@ -72,3 +72,5 @@ Add these secrets to your repository:
 - python-dotenv (>=1.0.0)
 - fastapi (>=0.109.0)
 - uvicorn (>=0.27.0)
+
+- Updated documentation for GitHub Actions integration
