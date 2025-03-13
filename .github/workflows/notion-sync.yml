@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install notion-client openai python-dotenv requests
+          pip install notion-client python-dotenv
 
       - name: Verify secrets
         run: |
@@ -34,21 +34,13 @@ jobs:
             echo "Error: NOTION_DATABASE_ID is not set"
             exit 1
           fi
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "Error: OPENAI_API_KEY is not set"
-            exit 1
-          fi
           echo "All required secrets are set"
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
       - name: Create Notion Page
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          echo "Running create_notion_page.py script..."
-          python .github/scripts/create_notion_page.py
+        run: python .github/scripts/create_notion_page.py
