@@ -4,14 +4,26 @@ from datetime import datetime
 from notion_client import Client
 
 def format_database_id(db_id):
-    # Try different formats of the database ID
-    formats = [
-        db_id,  # Original
-        db_id.replace('-', ''),  # No hyphens
-        '-'.join([db_id[:8], db_id[8:12], db_id[12:16], db_id[16:20], db_id[20:]]),  # With hyphens
-        db_id.split('?')[0]  # Remove query params
-    ]
-    return formats
+    # Remove any query parameters
+    db_id = db_id.split('?')[0]
+    
+    # Extract just the ID part if it's a full URL
+    if 'notion.so' in db_id:
+        db_id = db_id.split('/')[-1]
+    
+    # Remove any non-alphanumeric characters
+    db_id = ''.join(c for c in db_id if c.isalnum())
+    
+    # Format with hyphens
+    if len(db_id) == 32:
+        return '-'.join([
+            db_id[:8],
+            db_id[8:12],
+            db_id[12:16],
+            db_id[16:20],
+            db_id[20:]
+        ])
+    return db_id
 
 def get_commit_info():
     try:
@@ -43,25 +55,18 @@ def create_notion_page():
             print("Error: Could not get commit information")
             return
 
-        # Try different database ID formats
-        db_formats = format_database_id(database_id)
-        success = False
+        # Format the database ID
+        print(f"Original database ID: {database_id}")
+        database_id = format_database_id(database_id)
+        print(f"Formatted database ID: {database_id}")
 
-        for db_id in db_formats:
-            try:
-                print(f"Trying database ID format: {db_id}")
-                # Test if we can access the database
-                notion.databases.retrieve(db_id)
-                database_id = db_id
-                success = True
-                print(f"Successfully connected to database with ID: {db_id}")
-                break
-            except Exception as e:
-                print(f"Failed with format {db_id}: {str(e)}")
-                continue
-
-        if not success:
-            print("Could not connect to database with any ID format")
+        # Test database access
+        try:
+            db = notion.databases.retrieve(database_id)
+            print("Successfully connected to database!")
+            print(f"Database properties: {list(db['properties'].keys())}")
+        except Exception as e:
+            print(f"Error accessing database: {e}")
             return
 
         # Create the page
