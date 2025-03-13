@@ -3,7 +3,7 @@ name: Notion Sync
 on:
   push:
     branches:
-      - main  # or your default branch name
+      - master  # Changed from main to master to match our branch
 
 jobs:
   create-notion-page:
