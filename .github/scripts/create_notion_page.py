@@ -4,14 +4,15 @@ from datetime import datetime
 from notion_client import Client
 import re
 
-def extract_database_id(url_or_id):
-    """Extract database ID from a Notion URL or return the ID if already in correct format."""
-    # If it's a URL, extract the ID
-    if 'notion.so' in url_or_id:
-        match = re.search(r'([a-f0-9]{32}|\w{8}-\w{4}-\w{4}-\w{4}-\w{12})', url_or_id)
-        if match:
-            return match.group(1)
-    return url_or_id
+def format_database_id(db_id):
+    """Format database ID with hyphens in the correct positions."""
+    # Remove any non-alphanumeric characters
+    clean_id = ''.join(c for c in db_id if c.isalnum())
+    
+    # Insert hyphens in the correct positions
+    if len(clean_id) == 32:
+        return f"{clean_id[:8]}-{clean_id[8:12]}-{clean_id[12:16]}-{clean_id[16:20]}-{clean_id[20:]}"
+    return db_id
 
 def get_commit_info():
     try:
@@ -41,11 +42,11 @@ def create_notion_page():
         print(f"Connecting to Notion with token prefix: {notion_token[:6]}...")
         notion = Client(auth=notion_token)
         
-        # Extract and format database ID
+        # Format database ID
         original_id = database_id
-        database_id = extract_database_id(database_id)
-        print(f"Original database ID/URL: {original_id}")
-        print(f"Extracted database ID: {database_id}")
+        database_id = format_database_id(database_id)
+        print(f"Original database ID: {original_id}")
+        print(f"Formatted database ID: {database_id}")
         
         # Test database access
         try:
@@ -60,7 +61,7 @@ def create_notion_page():
             print("2. The integration has been added to the database's Share settings")
             print("3. The integration has the necessary permissions")
             print("\nDebug info:")
-            print(f"- Database ID format: {'Valid' if re.match(r'^[a-f0-9]{32}$', database_id) else 'Invalid'}")
+            print(f"- Database ID: {database_id}")
             print(f"- Token format: {'Valid' if notion_token.startswith('ntn_') else 'Invalid'}")
             return
 
