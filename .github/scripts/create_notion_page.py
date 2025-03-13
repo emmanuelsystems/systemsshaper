@@ -3,28 +3,6 @@ import subprocess
 from datetime import datetime
 from notion_client import Client
 
-def format_database_id(db_id):
-    # Remove any query parameters
-    db_id = db_id.split('?')[0]
-    
-    # Extract just the ID part if it's a full URL
-    if 'notion.so' in db_id:
-        db_id = db_id.split('/')[-1]
-    
-    # Remove any non-alphanumeric characters
-    db_id = ''.join(c for c in db_id if c.isalnum())
-    
-    # Format with hyphens
-    if len(db_id) == 32:
-        return '-'.join([
-            db_id[:8],
-            db_id[8:12],
-            db_id[12:16],
-            db_id[16:20],
-            db_id[20:]
-        ])
-    return db_id
-
 def get_commit_info():
     try:
         commit_msg = subprocess.check_output(['git', 'log', '-1', '--pretty=%B']).decode('utf-8').strip()
@@ -45,28 +23,31 @@ def create_notion_page():
 
     if not notion_token or not database_id:
         print("Error: Missing required environment variables")
+        print(f"NOTION_API_KEY: {'Set' if notion_token else 'Missing'}")
+        print(f"NOTION_DATABASE_ID: {'Set' if database_id else 'Missing'}")
         return
 
     try:
+        print(f"Connecting to Notion with token prefix: {notion_token[:6]}...")
         notion = Client(auth=notion_token)
-        commit_info = get_commit_info()
-
-        if not commit_info:
-            print("Error: Could not get commit information")
-            return
-
-        # Format the database ID
-        print(f"Original database ID: {database_id}")
-        database_id = format_database_id(database_id)
-        print(f"Formatted database ID: {database_id}")
-
-        # Test database access
+        
+        # Test database access first
         try:
+            print(f"Attempting to access database: {database_id}")
             db = notion.databases.retrieve(database_id)
             print("Successfully connected to database!")
             print(f"Database properties: {list(db['properties'].keys())}")
         except Exception as e:
             print(f"Error accessing database: {e}")
+            print("Please check:")
+            print("1. The database ID is correct")
+            print("2. The integration has been added to the database's Share settings")
+            print("3. The integration has the necessary permissions")
+            return
+
+        commit_info = get_commit_info()
+        if not commit_info:
+            print("Error: Could not get commit information")
             return
 
         # Create the page
