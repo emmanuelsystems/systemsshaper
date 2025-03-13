@@ -6,27 +6,31 @@ import re
 
 def try_database_formats(db_id):
     """Try different formats of the database ID."""
-    # Remove any query parameters and extract ID
-    if '?' in db_id:
-        db_id = db_id.split('?')[0]
-    if 'notion.so' in db_id:
-        db_id = db_id.split('-')[-1]
-
     formats = []
     
-    # Original format
-    formats.append(db_id)
+    # If it's a URL, extract the ID
+    if 'notion.so' in db_id or 'notion.site' in db_id:
+        # Extract the ID from the end of the URL
+        matches = re.findall(r'[a-f0-9]{32}', db_id)
+        if matches:
+            db_id = matches[0]
     
-    # Clean format (no hyphens)
+    # Remove any query parameters
+    db_id = db_id.split('?')[0]
+    
+    # Original format (no hyphens)
     clean_id = ''.join(c for c in db_id if c.isalnum())
     formats.append(clean_id)
     
-    # Hyphenated format
+    # UUID format (with hyphens)
     if len(clean_id) == 32:
-        hyphenated = f"{clean_id[:8]}-{clean_id[8:12]}-{clean_id[12:16]}-{clean_id[16:20]}-{clean_id[20:]}"
-        formats.append(hyphenated)
+        uuid_format = f"{clean_id[:8]}-{clean_id[8:12]}-{clean_id[12:16]}-{clean_id[16:20]}-{clean_id[20:]}"
+        formats.append(uuid_format)
     
-    return formats
+    # Notion's internal format (no hyphens)
+    formats.append(clean_id.lower())
+    
+    return list(set(formats))  # Remove duplicates
 
 def get_commit_info():
     try:
@@ -58,7 +62,7 @@ def create_notion_page():
         
         # Try different database ID formats
         db_formats = try_database_formats(database_id)
-        print(f"Original database ID: {database_id}")
+        print(f"Original database ID/URL: {database_id}")
         print(f"Trying formats: {db_formats}")
         
         success = False
@@ -77,7 +81,7 @@ def create_notion_page():
 
         if not success:
             print("\nFailed to connect with any database ID format.")
-            print("Please check:")
+            print("\nPlease check:")
             print("1. The database ID is correct")
             print("2. The integration has been added to the database's Share settings")
             print("3. The integration has the necessary permissions")
