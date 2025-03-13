@@ -8,6 +8,7 @@ Automatically creates Notion pages from GitHub commits.
 - Uses GitHub Actions for automation
 - Triggers the workflow on push events
 - Supports various database ID formats
+- Detailed debug information
 
 ## Setup
 1. Create a Notion integration at notion.so/my-integrations
