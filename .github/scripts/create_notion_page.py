@@ -2,7 +2,6 @@ import os
 import subprocess
 from datetime import datetime
 from notion_client import Client
-from openai import OpenAI
 
 def get_commit_info():
     """Get the latest commit information"""
@@ -28,57 +27,13 @@ def get_commit_info():
         print(f"Error getting git info: {str(e)}")
         raise
 
-def generate_content_with_gpt(commit_info):
-    """Generate a detailed description using GPT"""
-    print("Generating content with GPT...")
-    openai_key = os.getenv('OPENAI_API_KEY')
-    if not openai_key:
-        raise ValueError("OPENAI_API_KEY environment variable is not set")
-        
-    openai = OpenAI(api_key=openai_key)
-    
-    prompt = f"""Analyze this git commit and create a detailed, well-structured summary:
-
-Commit Message: {commit_info['message']}
-Author: {commit_info['author']}
-Changed Files: {', '.join(commit_info['changed_files'])}
-
-Please include:
-1. Main changes and their purpose
-2. Technical impact
-3. Any notable implementation details
-"""
-
+def create_notion_page(commit_info):
+    """Create a new page in Notion with commit information."""
     try:
-        completion = openai.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a technical writer who creates clear, concise summaries of code changes."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        content = completion.choices[0].message.content
-        print("Successfully generated GPT content")
-        return content
-    except Exception as e:
-        print(f"Error generating GPT content: {str(e)}")
-        raise
+        notion = Client(auth=os.getenv('NOTION_API_KEY'))
+        database_id = os.getenv('NOTION_DATABASE_ID')
+        print(f"Using database ID: {database_id}")
 
-def create_notion_page(commit_info, gpt_summary):
-    """Create a new page in Notion with commit information"""
-    print("Creating Notion page...")
-    notion_key = os.getenv('NOTION_API_KEY')
-    database_id = os.getenv('NOTION_DATABASE_ID')
-    
-    if not notion_key:
-        raise ValueError("NOTION_API_KEY environment variable is not set")
-    if not database_id:
-        raise ValueError("NOTION_DATABASE_ID environment variable is not set")
-    
-    notion = Client(auth=notion_key)
-    
-    try:
         # Create the page
         new_page = notion.pages.create(
             parent={"database_id": database_id},
@@ -87,23 +42,30 @@ def create_notion_page(commit_info, gpt_summary):
                     "title": [
                         {
                             "text": {
-                                "content": commit_info['message'][:100]
+                                "content": f"Commit: {commit_info['message']}"
                             }
                         }
                     ]
                 },
                 "Date": {
                     "date": {
-                        "start": commit_info['date']
+                        "start": datetime.now().isoformat()
                     }
                 }
             },
             children=[
                 {
                     "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{"text": {"content": "Commit Information"}}]
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": f"Commit Hash: {commit_info['hash']}\n\n"
+                                }
+                            }
+                        ]
                     }
                 },
                 {
@@ -112,8 +74,9 @@ def create_notion_page(commit_info, gpt_summary):
                     "paragraph": {
                         "rich_text": [
                             {
+                                "type": "text",
                                 "text": {
-                                    "content": f"Hash: {commit_info['hash']}\nAuthor: {commit_info['author']}\nDate: {commit_info['date']}"
+                                    "content": f"Author: {commit_info['author']}\n"
                                 }
                             }
                         ]
@@ -121,57 +84,39 @@ def create_notion_page(commit_info, gpt_summary):
                 },
                 {
                     "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{"text": {"content": "Changed Files"}}]
-                    }
-                },
-                {
-                    "object": "block",
-                    "type": "bulleted_list_item",
-                    "bulleted_list_item": {
-                        "rich_text": [{"text": {"content": "\n".join(commit_info['changed_files'])}}]
-                    }
-                },
-                {
-                    "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{"text": {"content": "GPT Analysis"}}]
-                    }
-                },
-                {
-                    "object": "block",
                     "type": "paragraph",
                     "paragraph": {
-                        "rich_text": [{"text": {"content": gpt_summary}}]
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": f"Files Changed:\n{commit_info['changed_files']}"
+                                }
+                            }
+                        ]
                     }
                 }
             ]
         )
-        
-        print(f"Successfully created Notion page with ID: {new_page.id}")
-        return new_page.id
+        print(f"Successfully created Notion page with ID: {new_page['id']}")
+        return new_page
+
     except Exception as e:
         print(f"Error creating Notion page: {str(e)}")
         raise
 
 def main():
+    """Main function to create a Notion page for the latest commit."""
     print("Starting Notion page creation...")
-    print(f"Using database ID: {os.getenv('NOTION_DATABASE_ID')}")
-    
     try:
         # Get commit information
         commit_info = get_commit_info()
-        
-        # Generate content summary using GPT
-        gpt_summary = generate_content_with_gpt(commit_info)
-        
-        # Create Notion page
-        page_id = create_notion_page(commit_info, gpt_summary)
-        
-        print(f"Successfully created Notion page: {page_id}")
-        
+        print(f"Found commit: {commit_info['message']} ({commit_info['hash']})")
+
+        # Create the Notion page
+        create_notion_page(commit_info)
+        print("Successfully created Notion page!")
+
     except Exception as e:
         print(f"Error: {str(e)}")
         exit(1)
