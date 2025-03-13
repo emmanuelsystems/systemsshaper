@@ -7,39 +7,26 @@ import re
 def test_notion_connection(notion, database_id):
     """Test basic Notion API connectivity."""
     try:
-        # Try to list all users with access to verify token works
-        users = notion.users.list()
-        print("\n✓ Successfully connected to Notion API!")
-        print(f"Bot user: {users.get('bot', {}).get('owner', {}).get('name', 'Unknown')}")
-        
-        # Try to access the database directly
-        try:
-            db = notion.databases.retrieve(database_id)
-            print("\n✓ Successfully accessed database!")
-            print(f"Title: {db['title'][0]['text']['content'] if db['title'] else 'Untitled'}")
-            print(f"Properties: {list(db['properties'].keys())}")
-            return True
-        except Exception as e:
-            print(f"\n✗ Error accessing database: {str(e)}")
-            print("\nPlease verify:")
-            print("1. The database ID is correct")
-            print("2. The integration has been added to the database via Share > Add connections")
-            print("3. The database has the required properties:")
-            print("   - Title (type: title)")
-            print("   - Date (type: date)")
-            print("   - Author (type: text)")
-            print("   - Files (type: text)")
-            return False
-            
+        print("\nTesting database access...")
+        db = notion.databases.retrieve(database_id)
+        print("✓ Successfully accessed database!")
+        print(f"Title: {db['title'][0]['text']['content'] if db['title'] else 'Untitled'}")
+        print(f"Properties: {list(db['properties'].keys())}")
+        return True
     except Exception as e:
-        print(f"\n✗ Error connecting to Notion: {e}")
+        print(f"\n✗ Error: {str(e)}")
         print("\nPlease verify:")
-        print("1. The integration token is correct")
-        print("2. The integration has these capabilities enabled:")
-        print("   - Read content")
-        print("   - Update content")
-        print("   - Insert content")
-        print("   - No user information")
+        print("1. You've shared the database with the integration:")
+        print("   - Open the database")
+        print("   - Click Share in the top right")
+        print("   - Click 'Add connections'")
+        print("   - Search for 'GitHub Commits Integration'")
+        print("   - Click Invite")
+        print("\n2. The database has these properties:")
+        print("   - Title (type: title)")
+        print("   - Date (type: date)")
+        print("   - Author (type: text)")
+        print("   - Files (type: text)")
         return False
 
 def get_commit_info():
@@ -67,7 +54,7 @@ def create_notion_page():
         return
 
     try:
-        print(f"Connecting to Notion with token prefix: {notion_token[:6]}...")
+        print(f"Connecting to Notion with token: {notion_token[:6]}...")
         notion = Client(auth=notion_token)
         
         # Clean up database ID (remove any URL parts)
@@ -76,7 +63,7 @@ def create_notion_page():
             if matches:
                 database_id = matches[0]
         
-        # Test connection and database access
+        # Test database access
         if not test_notion_connection(notion, database_id):
             return
 
@@ -129,7 +116,7 @@ def create_notion_page():
         return response
 
     except Exception as e:
-        print(f"\n✗ Error creating Notion page: {e}")
+        print(f"\n✗ Error: {str(e)}")
         raise
 
 if __name__ == "__main__":
