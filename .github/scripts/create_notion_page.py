@@ -4,6 +4,34 @@ from datetime import datetime
 from notion_client import Client
 import re
 
+def test_notion_connection(notion):
+    """Test basic Notion API connectivity."""
+    try:
+        # Try to search for the database
+        results = notion.search(
+            query="GitHub Commits",
+            filter={
+                "property": "object",
+                "value": "database"
+            }
+        ).get("results", [])
+        
+        if results:
+            print("\n✓ Successfully connected to Notion API!")
+            print("Found databases:")
+            for db in results:
+                db_id = db["id"]
+                title = db["title"][0]["text"]["content"] if db["title"] else "Untitled"
+                print(f"- {title} (ID: {db_id})")
+            return results
+        else:
+            print("\n✓ Connected to Notion API, but no matching databases found.")
+            return []
+            
+    except Exception as e:
+        print(f"\n✗ Error testing Notion connection: {e}")
+        return []
+
 def try_database_formats(db_id):
     """Try different formats of the database ID."""
     formats = []
@@ -60,7 +88,16 @@ def create_notion_page():
         print(f"Connecting to Notion with token prefix: {notion_token[:6]}...")
         notion = Client(auth=notion_token)
         
-        # Try different database ID formats
+        # First, test the basic API connection
+        databases = test_notion_connection(notion)
+        if not databases:
+            print("\nPlease check:")
+            print("1. The integration token is correct")
+            print("2. The integration has the necessary capabilities enabled")
+            print("3. The integration has been added to at least one database")
+            return
+            
+        # Try to access the specific database
         db_formats = try_database_formats(database_id)
         print(f"Original database ID/URL: {database_id}")
         print(f"Trying formats: {db_formats}")
@@ -71,12 +108,13 @@ def create_notion_page():
                 print(f"\nTrying database ID: {db_id}")
                 db = notion.databases.retrieve(db_id)
                 print("✓ Successfully connected to database!")
+                print(f"Database title: {db['title'][0]['text']['content'] if db['title'] else 'Untitled'}")
                 print(f"Database properties: {list(db['properties'].keys())}")
                 database_id = db_id
                 success = True
                 break
             except Exception as e:
-                print(f"✗ Failed with format {db_id}: {str(e)}")
+                print(f"✗ Error accessing database: {str(e)}")
                 continue
 
         if not success:
