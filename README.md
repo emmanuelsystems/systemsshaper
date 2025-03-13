@@ -6,6 +6,7 @@ Automatically creates Notion pages from GitHub commits.
 - Creates a new Notion page for each commit
 - Includes commit message, author, and changed files
 - Uses GitHub Actions for automation
+- Triggers the workflow on push events
 
 ## Setup
 1. Create a Notion integration at notion.so/my-integrations
