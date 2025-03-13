@@ -51,7 +51,7 @@ Please include:
 
     try:
         completion = openai.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a technical writer who creates clear, concise summaries of code changes."},
                 {"role": "user", "content": prompt}
