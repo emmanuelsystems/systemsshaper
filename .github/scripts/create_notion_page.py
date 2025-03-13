@@ -24,9 +24,9 @@ def test_notion_connection(notion, database_id):
         print("   - Click Invite")
         print("\n2. The database has these properties:")
         print("   - Title (type: title)")
-        print("   - Date (type: date)")
-        print("   - Author (type: text)")
-        print("   - Files (type: text)")
+        print("   - Files (type: rich text)")
+        print("   - auth (type: rich text)")
+        print("   - date (type: date)")
         return False
 
 def get_commit_info():
@@ -85,12 +85,12 @@ def create_notion_page():
                         }
                     ]
                 },
-                "Date": {
+                "date": {
                     "date": {
                         "start": datetime.now().isoformat()
                     }
                 },
-                "Author": {
+                "auth": {
                     "rich_text": [
                         {
                             "text": {
