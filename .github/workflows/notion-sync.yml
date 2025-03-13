@@ -9,7 +9,10 @@ jobs:
   create-notion-page:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need at least 2 commits for git log to work
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -21,10 +24,31 @@ jobs:
           python -m pip install --upgrade pip
           pip install notion-client openai python-dotenv requests
 
+      - name: Verify secrets
+        run: |
+          if [ -z "$NOTION_API_KEY" ]; then
+            echo "Error: NOTION_API_KEY is not set"
+            exit 1
+          fi
+          if [ -z "$NOTION_DATABASE_ID" ]; then
+            echo "Error: NOTION_DATABASE_ID is not set"
+            exit 1
+          fi
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "Error: OPENAI_API_KEY is not set"
+            exit 1
+          fi
+          echo "All required secrets are set"
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
       - name: Create Notion Page
         env:
           NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
+          echo "Running create_notion_page.py script..."
           python .github/scripts/create_notion_page.py
