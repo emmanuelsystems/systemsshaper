@@ -1,0 +1,30 @@
+name: Notion Sync
+
+on:
+  push:
+    branches:
+      - main  # or your default branch name
+
+jobs:
+  create-notion-page:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install notion-client openai python-dotenv requests
+
+      - name: Create Notion Page
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python .github/scripts/create_notion_page.py
