@@ -2,6 +2,16 @@ import os
 import subprocess
 from datetime import datetime
 from notion_client import Client
+import re
+
+def extract_database_id(url_or_id):
+    """Extract database ID from a Notion URL or return the ID if already in correct format."""
+    # If it's a URL, extract the ID
+    if 'notion.so' in url_or_id:
+        match = re.search(r'([a-f0-9]{32}|\w{8}-\w{4}-\w{4}-\w{4}-\w{12})', url_or_id)
+        if match:
+            return match.group(1)
+    return url_or_id
 
 def get_commit_info():
     try:
@@ -31,7 +41,13 @@ def create_notion_page():
         print(f"Connecting to Notion with token prefix: {notion_token[:6]}...")
         notion = Client(auth=notion_token)
         
-        # Test database access first
+        # Extract and format database ID
+        original_id = database_id
+        database_id = extract_database_id(database_id)
+        print(f"Original database ID/URL: {original_id}")
+        print(f"Extracted database ID: {database_id}")
+        
+        # Test database access
         try:
             print(f"Attempting to access database: {database_id}")
             db = notion.databases.retrieve(database_id)
@@ -39,10 +55,13 @@ def create_notion_page():
             print(f"Database properties: {list(db['properties'].keys())}")
         except Exception as e:
             print(f"Error accessing database: {e}")
-            print("Please check:")
+            print("\nPlease check:")
             print("1. The database ID is correct")
             print("2. The integration has been added to the database's Share settings")
             print("3. The integration has the necessary permissions")
+            print("\nDebug info:")
+            print(f"- Database ID format: {'Valid' if re.match(r'^[a-f0-9]{32}$', database_id) else 'Invalid'}")
+            print(f"- Token format: {'Valid' if notion_token.startswith('ntn_') else 'Invalid'}")
             return
 
         commit_info = get_commit_info()
